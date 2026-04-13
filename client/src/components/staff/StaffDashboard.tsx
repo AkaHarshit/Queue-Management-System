@@ -1,3 +1,4 @@
+// StaffDashboard — Token queue processing and service management
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { Token, TokenStatus } from '../../types';
