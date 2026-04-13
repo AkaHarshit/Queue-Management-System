@@ -1,3 +1,4 @@
+// AdminDashboard — Full admin panel with tabs, service management, and queue monitoring
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
 import { DashboardStats, Service, User, QueueInfo } from '../../types';
