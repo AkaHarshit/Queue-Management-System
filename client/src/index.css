@@ -805,7 +805,7 @@ tr:hover td {
   margin-top: 24px;
 }
 
-/* ─── Notification Panel ─────────────────────────────── */
+/* ─── Notification Panel Component ─────────────────────────────── */
 .notification-panel {
   position: absolute;
   top: 60px;
