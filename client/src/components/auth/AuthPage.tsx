@@ -1,3 +1,4 @@
+// AuthPage — Login and registration page with demo account display
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
