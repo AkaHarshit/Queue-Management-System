@@ -766,7 +766,7 @@ tr:hover td {
   .auth-card { padding: 28px 20px; margin: 16px; }
 }
 
-/* ─── Modal ──────────────────────────────────────────── */
+/* ─── Modal Overlay ──────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
