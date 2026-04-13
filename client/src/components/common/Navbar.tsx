@@ -1,3 +1,4 @@
+// Navbar — Top navigation bar with notification panel integration
 import { useAuth } from '../../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { api } from '../../services/api';
