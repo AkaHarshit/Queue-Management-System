@@ -1,3 +1,4 @@
+// AuthContext — Provides authentication state across the React component tree
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
 import { api } from '../services/api';
