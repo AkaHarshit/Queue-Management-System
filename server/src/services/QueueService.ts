@@ -1,3 +1,4 @@
+// QueueService — Core business logic for queue management operations
 import { TokenRepository } from '../repositories/TokenRepository';
 import { QueueRepository } from '../repositories/QueueRepository';
 import { ServiceRepository } from '../repositories/ServiceRepository';
