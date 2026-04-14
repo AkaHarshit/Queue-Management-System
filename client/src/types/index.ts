@@ -1,3 +1,5 @@
+// Type definitions for the Queue Management System client
+
 export enum Role {
   CUSTOMER = 'CUSTOMER',
   STAFF = 'STAFF',
