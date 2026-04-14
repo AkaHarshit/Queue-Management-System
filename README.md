@@ -193,6 +193,15 @@ npm run dev
 | PUT | `/api/notifications/:id/read` | All | Mark as read |
 | PUT | `/api/notifications/read-all` | All | Mark all as read |
 
+## 🔧 Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3001` | Server port |
+| `JWT_SECRET` | `queue-management-secret-key-2024` | JWT signing secret |
+| `JWT_EXPIRES_IN` | `24h` | Token expiration |
+| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
+
 ## 📄 License
 
 This project is for educational purposes as part of the SESD curriculum.
