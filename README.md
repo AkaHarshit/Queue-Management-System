@@ -2,6 +2,8 @@
 
 A comprehensive Queue Management System designed for **Salons** and **Hospitals** to efficiently manage customer/patient queues, reduce waiting times, and improve service delivery through digital token-based queuing.
 
+**🚀 Vercel Serverless & PostgreSQL Ready**: This application has been fully refactored for cloud deployment using a Serverless Node.js backend on Vercel and an asynchronous PostgreSQL database architecture.
+
 ## ✨ Features
 
 ### 🎫 Token System
@@ -16,7 +18,7 @@ A comprehensive Queue Management System designed for **Salons** and **Hospitals*
 - **Admin Dashboard** — System overview, manage services & users, monitor all queues, analytics
 
 ### 🔔 Real-Time Notifications
-- WebSocket-based live updates (Observer Pattern)
+- HTTP Short-Polling for live, serverless-compatible updates
 - In-app notification persistence with mark-as-read
 - Queue position change alerts
 - Service start/completion notifications
@@ -35,8 +37,7 @@ A comprehensive Queue Management System designed for **Salons** and **Hospitals*
 | **Singleton** | `DatabaseConnection`, `ConfigManager` |
 | **Repository** | `UserRepository`, `TokenRepository`, `QueueRepository`, etc. |
 | **Factory** | `TokenFactory` for token creation with auto-numbering |
-| **Strategy** | `INotificationStrategy` → `WebSocketNotificationStrategy`, `InAppNotificationStrategy` |
-| **Observer** | `WebSocketServer` for real-time broadcast to clients |
+| **Strategy** | `INotificationStrategy` → `InAppNotificationStrategy` |
 
 ### SOLID Principles
 - **SRP** — Each class has a single responsibility (controllers, services, repositories)
@@ -48,46 +49,43 @@ A comprehensive Queue Management System designed for **Salons** and **Hospitals*
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Runtime**: Node.js + TypeScript
+- **Runtime**: Node.js + TypeScript (Vercel Serverless Functions)
 - **Framework**: Express.js
-- **Database**: SQLite (via `better-sqlite3`)
+- **Database**: PostgreSQL (via `pg`)
 - **Auth**: JWT (JSON Web Tokens) + bcryptjs
-- **Real-time**: Socket.IO (WebSocket)
+- **Real-time**: HTTP Short-Polling
 
 ### Frontend
 - **Framework**: React 19 + TypeScript
 - **Build Tool**: Vite
 - **Styling**: Vanilla CSS (custom design system)
-- **Real-time**: Socket.IO Client
+- **Real-time**: Native React `setInterval` Polling
 
 ## 📁 Project Structure
 
 ```
 ├── server/
-│   └── src/
-│       ├── config/          # Singleton configs (database, app settings)
-│       ├── controllers/     # REST API controllers
-│       ├── factories/       # Factory pattern (TokenFactory)
-│       ├── interfaces/      # TypeScript interfaces (ISP)
-│       ├── middleware/      # Auth & role-based middleware
-│       ├── models/          # Domain models (User, Token, Service, etc.)
-│       ├── repositories/    # Data access layer (Repository Pattern)
-│       ├── routes/          # Express route definitions
-│       ├── services/        # Business logic layer
-│       ├── strategies/      # Notification strategies (Strategy Pattern)
-│       ├── websocket/       # WebSocket server (Observer Pattern)
-│       └── index.ts         # Application bootstrap & DI wiring
+│   ├── api/             # Vercel Serverless entrypoint
+│   │   └── index.ts
+│   ├── src/
+│   │   ├── config/      # Singleton configs (database, app settings)
+│   │   ├── controllers/ # REST API controllers
+│   │   ├── factories/   # Factory pattern (TokenFactory)
+│   │   ├── interfaces/  # TypeScript interfaces (ISP)
+│   │   ├── middleware/  # Auth & role-based middleware
+│   │   ├── models/      # Domain models (User, Token, Service, etc.)
+│   │   ├── repositories/# PostgreSQL data access layer (Repository Pattern)
+│   │   ├── routes/      # Express route definitions
+│   │   ├── services/    # Business logic layer
+│   │   ├── strategies/  # Notification strategies (Strategy Pattern)
+│   │   └── index.ts     # Local development bootstrap & DI wiring
+│   └── vercel.json      # Vercel deployment configuration
 ├── client/
 │   └── src/
-│       ├── components/      # React components (auth, dashboards, common)
-│       ├── context/         # React Context (AuthContext)
-│       ├── hooks/           # Custom hooks (useWebSocket)
-│       ├── services/        # API client service
-│       └── types/           # TypeScript type definitions
-├── ErDiagram.md             # Entity-Relationship diagram
-├── classDiagram.md          # UML class diagram
-├── sequenceDiagram.md       # Sequence diagrams
-└── useCaseDiagram.md        # Use case diagrams
+│       ├── components/  # React components (auth, dashboards, common)
+│       ├── context/     # React Context (AuthContext)
+│       ├── services/    # API client service
+│       └── types/       # TypeScript type definitions
 ```
 
 ## 🚀 Getting Started
@@ -95,6 +93,7 @@ A comprehensive Queue Management System designed for **Salons** and **Hospitals*
 ### Prerequisites
 - Node.js 18+
 - npm
+- PostgreSQL database instance (local or cloud like Neon/Supabase)
 
 ### Installation
 
@@ -112,7 +111,16 @@ cd ../client
 npm install
 ```
 
-### Running the Application
+### Environment Setup
+Create a `.env` file in the `server` directory:
+```
+DATABASE_URL=postgresql://user:password@host:port/database
+JWT_SECRET=your_super_secret_key
+PORT=3001
+CORS_ORIGIN=http://localhost:5173
+```
+
+### Running the Application Locally
 
 ```bash
 # Terminal 1 — Start the backend server
@@ -126,6 +134,9 @@ npm run dev
 # Client runs on http://localhost:5173
 ```
 
+### Vercel Deployment
+The application is pre-configured for Vercel. Simply connect your GitHub repository to Vercel, set the `DATABASE_URL` and `JWT_SECRET` environment variables in the Vercel dashboard, and deploy! The `vercel.json` file automatically routes all `/api/*` traffic to the serverless function.
+
 ### Demo Accounts
 
 | Role | Email | Password |
@@ -136,71 +147,9 @@ npm run dev
 | Customer | john@example.com | customer123 |
 | Customer | jane@example.com | customer123 |
 
-## 📐 UML Diagrams
-
-- **ER Diagram** — Database schema with all tables and relationships
-- **Class Diagram** — OOP class hierarchy showing SOLID patterns
-- **Sequence Diagrams** — Flow for join queue, complete service, notifications
-- **Use Case Diagram** — Actor-use case mappings for all roles
-
 ## 📡 API Endpoints
 
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login user |
-
-### Queue Management
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| POST | `/api/queue/join` | Customer | Join a queue |
-| GET | `/api/queue/my-tokens` | Customer | Get my tokens |
-| DELETE | `/api/queue/token/:id` | Customer | Cancel token |
-| GET | `/api/queue/token/:id/status` | All | Get token status |
-| GET | `/api/queue/staff/tokens` | Staff | Get assigned tokens |
-| PUT | `/api/queue/token/:id/start` | Staff | Start service |
-| PUT | `/api/queue/token/:id/complete` | Staff | Complete service |
-| GET | `/api/queue/all` | Admin | Monitor all queues |
-
-### Services
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/services` | Public | List all services |
-| GET | `/api/services/active` | Public | List active services |
-| POST | `/api/services` | Admin | Create service |
-| PUT | `/api/services/:id` | Admin | Update service |
-| DELETE | `/api/services/:id` | Admin | Delete service |
-
-### Users
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/users/me` | All | Get current user |
-| GET | `/api/users` | Admin | List all users |
-| DELETE | `/api/users/:id` | Admin | Delete user |
-
-### Analytics
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/analytics/dashboard` | Admin | Dashboard stats |
-| GET | `/api/analytics/services` | Admin/Staff | Service statistics |
-
-### Notifications
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/notifications` | All | Get notifications |
-| GET | `/api/notifications/unread` | All | Get unread notifications |
-| PUT | `/api/notifications/:id/read` | All | Mark as read |
-| PUT | `/api/notifications/read-all` | All | Mark all as read |
-
-## 🔧 Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `3001` | Server port |
-| `JWT_SECRET` | `queue-management-secret-key-2024` | JWT signing secret |
-| `JWT_EXPIRES_IN` | `24h` | Token expiration |
-| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
+*(API endpoints remain unchanged)*
 
 ## 📄 License
 
