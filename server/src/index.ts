@@ -47,6 +47,8 @@ import { createNotificationRoutes } from './routes/notificationRoutes';
 import { WebSocketServer } from './websocket/WebSocketServer';
 
 import bcrypt from 'bcryptjs';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 // ─── Bootstrap Application ──────────────────────────────────────────────────
 
@@ -55,8 +57,16 @@ const app = express();
 const httpServer = createServer(app);
 
 // Middleware
+app.use(helmet());
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(express.json());
+
+// Rate Limiting for auth routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: { error: 'Too many login attempts, please try again after 15 minutes' }
+});
 
 // ─── Initialize Database (Singleton) ────────────────────────────────────────
 const db = DatabaseConnection.getInstance();
@@ -103,7 +113,7 @@ const analyticsController = new AnalyticsController(analyticsService);
 const notificationController = new NotificationController(notificationService);
 
 // ─── Register Routes ────────────────────────────────────────────────────────
-app.use('/api/auth', createAuthRoutes(authController));
+app.use('/api/auth', authLimiter, createAuthRoutes(authController));
 app.use('/api/queue', createQueueRoutes(queueController));
 app.use('/api/services', createServiceRoutes(serviceController));
 app.use('/api/users', createUserRoutes(userController));

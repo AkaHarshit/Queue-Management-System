@@ -12,7 +12,7 @@ export class DatabaseConnection {
   private db: Database.Database;
 
   private constructor() {
-    const dbPath = path.join(__dirname, '..', '..', 'data', 'queue_management.db');
+    const dbPath = process.env.DB_PATH || path.join(__dirname, '..', '..', 'data', 'queue_management.db');
     // Ensure data directory exists
     const fs = require('fs');
     const dir = path.dirname(dbPath);

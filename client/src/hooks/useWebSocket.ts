@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 
-const WS_URL = 'http://localhost:3001';
+const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
 
 /**
  * useWebSocket — Custom Hook for real-time WebSocket connectivity.
