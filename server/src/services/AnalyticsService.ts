@@ -2,12 +2,6 @@ import { TokenRepository } from '../repositories/TokenRepository';
 import { ServiceRepository } from '../repositories/ServiceRepository';
 import { QueueRepository } from '../repositories/QueueRepository';
 
-/**
- * AnalyticsService — Service Layer Pattern (SRP)
- *
- * SRP: Only responsible for analytics and reporting logic.
- * DIP: Depends on repository interfaces.
- */
 export class AnalyticsService {
   private tokenRepository: TokenRepository;
   private serviceRepository: ServiceRepository;
@@ -23,16 +17,14 @@ export class AnalyticsService {
     this.queueRepository = queueRepository;
   }
 
-  /** Get dashboard statistics */
-  getDashboardStats(): any {
-    const todayStats = this.tokenRepository.getTodayStats();
-    const queues = this.queueRepository.findAll();
-    const services = this.serviceRepository.findAll();
+  async getDashboardStats(): Promise<any> {
+    const todayStats = await this.tokenRepository.getTodayStats();
+    const queues = await this.queueRepository.findAll();
+    const services = await this.serviceRepository.findAll();
 
-    // Active queue stats
     let totalActiveTokens = 0;
-    const queueDetails = queues.map((queue: any) => {
-      const tokens = this.queueRepository.getQueueTokens(queue.id);
+    const queueDetails = await Promise.all(queues.map(async (queue: any) => {
+      const tokens = await this.queueRepository.getQueueTokens(queue.id);
       totalActiveTokens += tokens.length;
       return {
         serviceId: queue.service_id,
@@ -40,7 +32,7 @@ export class AnalyticsService {
         activeTokens: tokens.length,
         currentPosition: queue.current_position,
       };
-    });
+    }));
 
     return {
       today: {
@@ -59,11 +51,10 @@ export class AnalyticsService {
     };
   }
 
-  /** Get service-level statistics */
-  getServiceStatistics(): any[] {
-    const services = this.serviceRepository.findAll();
-    return services.map((service: any) => {
-      const activeTokens = this.tokenRepository.findActiveTokensByService(service.id);
+  async getServiceStatistics(): Promise<any[]> {
+    const services = await this.serviceRepository.findAll();
+    return Promise.all(services.map(async (service: any) => {
+      const activeTokens = await this.tokenRepository.findActiveTokensByService(service.id);
       return {
         id: service.id,
         name: service.name,
@@ -76,6 +67,6 @@ export class AnalyticsService {
         waitingTokens: activeTokens.filter((t: any) => t.status === 'WAITING').length,
         inProgressTokens: activeTokens.filter((t: any) => t.status === 'IN_PROGRESS').length,
       };
-    });
+    }));
   }
 }

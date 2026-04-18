@@ -4,12 +4,6 @@ import { UserRepository } from '../repositories/UserRepository';
 import { ConfigManager } from '../config/config';
 import { Role } from '../models/enums';
 
-/**
- * AuthService — Service Layer Pattern (SRP)
- *
- * SRP: Only responsible for authentication and authorization logic.
- * DIP: Depends on UserRepository interface, not concrete DB.
- */
 export class AuthService {
   private userRepository: UserRepository;
   private config: ConfigManager;
@@ -19,10 +13,6 @@ export class AuthService {
     this.config = ConfigManager.getInstance();
   }
 
-  /**
-   * Register a new user.
-   * Creates role-specific sub-record (customer/staff/admin).
-   */
   async register(data: {
     email: string;
     password: string;
@@ -31,18 +21,15 @@ export class AuthService {
     phoneNumber?: string;
     role?: Role;
   }): Promise<any> {
-    // Check if email already exists
-    const existing = this.userRepository.findByEmail(data.email);
+    const existing = await this.userRepository.findByEmail(data.email);
     if (existing) {
       throw new Error('Email already registered');
     }
 
-    // Hash password
     const passwordHash = await bcrypt.hash(data.password, 12);
     const role = data.role || Role.CUSTOMER;
 
-    // Create user
-    const user = this.userRepository.save({
+    const user = await this.userRepository.save({
       email: data.email,
       passwordHash,
       firstName: data.firstName,
@@ -51,16 +38,14 @@ export class AuthService {
       role,
     });
 
-    // Create role-specific record
     if (role === Role.CUSTOMER) {
-      this.userRepository.createCustomer(user.id);
+      await this.userRepository.createCustomer(user.id);
     } else if (role === Role.STAFF) {
-      this.userRepository.createStaff(user.id);
+      await this.userRepository.createStaff(user.id);
     } else if (role === Role.ADMIN) {
-      this.userRepository.createAdmin(user.id);
+      await this.userRepository.createAdmin(user.id);
     }
 
-    // Generate JWT
     const token = this.generateToken(user);
 
     return {
@@ -69,11 +54,8 @@ export class AuthService {
     };
   }
 
-  /**
-   * Authenticate a user with email and password.
-   */
   async login(email: string, password: string): Promise<any> {
-    const user = this.userRepository.findByEmail(email);
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new Error('Invalid email or password');
     }
@@ -84,7 +66,7 @@ export class AuthService {
     }
 
     const token = this.generateToken(user);
-    const userDetails = this.userRepository.findUserWithDetails(user.id);
+    const userDetails = await this.userRepository.findUserWithDetails(user.id);
 
     return {
       user: this.sanitizeUser(userDetails),
@@ -92,16 +74,14 @@ export class AuthService {
     };
   }
 
-  /** Generate a JWT token */
   private generateToken(user: any): string {
     return jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
       this.config.jwtSecret,
-      { expiresIn: 86400 } // 24 hours in seconds
+      { expiresIn: 86400 }
     );
   }
 
-  /** Remove sensitive fields from user object */
   private sanitizeUser(user: any): any {
     const { password_hash, passwordHash, ...safe } = user;
     return safe;

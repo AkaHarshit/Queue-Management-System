@@ -1,12 +1,6 @@
 import { UserRepository } from '../repositories/UserRepository';
 import bcrypt from 'bcryptjs';
 
-/**
- * UserService — Service Layer Pattern (SRP)
- *
- * SRP: Only responsible for user management (CRUD).
- * DIP: Depends on UserRepository interface.
- */
 export class UserService {
   private userRepository: UserRepository;
 
@@ -14,17 +8,19 @@ export class UserService {
     this.userRepository = userRepository;
   }
 
-  getAllUsers(): any[] {
-    return this.userRepository.findAll().map(this.sanitizeUser);
+  async getAllUsers(): Promise<any[]> {
+    const users = await this.userRepository.findAll();
+    return users.map(this.sanitizeUser);
   }
 
-  getUserById(id: number): any | null {
-    const user = this.userRepository.findUserWithDetails(id);
+  async getUserById(id: number): Promise<any | null> {
+    const user = await this.userRepository.findUserWithDetails(id);
     return user ? this.sanitizeUser(user) : null;
   }
 
-  getUsersByRole(role: string): any[] {
-    return this.userRepository.findByRole(role).map(this.sanitizeUser);
+  async getUsersByRole(role: string): Promise<any[]> {
+    const users = await this.userRepository.findByRole(role);
+    return users.map(this.sanitizeUser);
   }
 
   async updateUser(id: number, data: any): Promise<any | null> {
@@ -32,16 +28,16 @@ export class UserService {
       data.passwordHash = await bcrypt.hash(data.password, 12);
       delete data.password;
     }
-    const updated = this.userRepository.update(id, data);
+    const updated = await this.userRepository.update(id, data);
     return updated ? this.sanitizeUser(updated) : null;
   }
 
-  deleteUser(id: number): boolean {
-    return this.userRepository.delete(id);
+  async deleteUser(id: number): Promise<boolean> {
+    return await this.userRepository.delete(id);
   }
 
-  getStaffByServiceId(serviceId: number): any[] {
-    return this.userRepository.findStaffByServiceId(serviceId);
+  async getStaffByServiceId(serviceId: number): Promise<any[]> {
+    return await this.userRepository.findStaffByServiceId(serviceId);
   }
 
   private sanitizeUser(user: any): any {

@@ -16,7 +16,6 @@ import { ServiceStatisticsRepository } from './repositories/ServiceStatisticsRep
 import { TokenFactory } from './factories/TokenFactory';
 
 // Strategies
-import { WebSocketNotificationStrategy } from './strategies/WebSocketNotificationStrategy';
 import { InAppNotificationStrategy } from './strategies/InAppNotificationStrategy';
 
 // Services
@@ -43,9 +42,6 @@ import { createUserRoutes } from './routes/userRoutes';
 import { createAnalyticsRoutes } from './routes/analyticsRoutes';
 import { createNotificationRoutes } from './routes/notificationRoutes';
 
-// WebSocket
-import { WebSocketServer } from './websocket/WebSocketServer';
-
 import bcrypt from 'bcryptjs';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -71,7 +67,7 @@ const authLimiter = rateLimit({
 // ─── Initialize Database (Singleton) ────────────────────────────────────────
 const db = DatabaseConnection.getInstance();
 
-// ─── Initialize Repositories (DIP — all services depend on interfaces) ──────
+// ─── Initialize Repositories (DIP) ──────────────────────────────────────────
 const userRepository = new UserRepository();
 const tokenRepository = new TokenRepository();
 const queueRepository = new QueueRepository();
@@ -82,17 +78,11 @@ const statisticsRepository = new ServiceStatisticsRepository();
 // ─── Initialize Factory (Factory Pattern) ───────────────────────────────────
 const tokenFactory = new TokenFactory(tokenRepository);
 
-// ─── Initialize WebSocket (Observer Pattern) ────────────────────────────────
-const wsServer = new WebSocketServer(httpServer);
-
 // ─── Initialize Strategies (Strategy Pattern — OCP) ─────────────────────────
-const wsStrategy = new WebSocketNotificationStrategy();
-wsStrategy.setSocketServer(wsServer.getIO());
 const inAppStrategy = new InAppNotificationStrategy(notificationRepository);
 
 // ─── Initialize Services (Service Layer — SRP) ─────────────────────────────
 const notificationService = new NotificationService(notificationRepository);
-notificationService.registerStrategy(wsStrategy);    // Register WebSocket channel
 notificationService.registerStrategy(inAppStrategy);  // Register In-App channel
 
 const authService = new AuthService(userRepository);
@@ -100,7 +90,7 @@ const userService = new UserService(userRepository);
 const serviceService = new ServiceService(serviceRepository, queueRepository);
 const queueService = new QueueService(
   tokenRepository, queueRepository, serviceRepository,
-  userRepository, tokenFactory, notificationService, wsStrategy
+  userRepository, tokenFactory, notificationService
 );
 const analyticsService = new AnalyticsService(tokenRepository, serviceRepository, queueRepository);
 
@@ -127,7 +117,7 @@ app.get('/api/health', (req, res) => {
 
 // ─── Seed Data ──────────────────────────────────────────────────────────────
 async function seedData(): Promise<void> {
-  const existingAdmin = userRepository.findByEmail('admin@queue.com');
+  const existingAdmin = await userRepository.findByEmail('admin@queue.com');
   if (existingAdmin) {
     console.log('[Seed] Data already exists, skipping seed.');
     return;
@@ -140,64 +130,64 @@ async function seedData(): Promise<void> {
   const customerHash = await bcrypt.hash('customer123', 12);
 
   // Create Admin
-  const adminUser = userRepository.save({
+  const adminUser = await userRepository.save({
     email: 'admin@queue.com', passwordHash: adminHash,
     firstName: 'Admin', lastName: 'User', role: 'ADMIN',
   });
-  userRepository.createAdmin(adminUser.id);
+  await userRepository.createAdmin(adminUser.id);
 
   // Create Staff 1
-  const staff1User = userRepository.save({
+  const staff1User = await userRepository.save({
     email: 'staff1@queue.com', passwordHash: staffHash,
     firstName: 'Alice', lastName: 'Smith', role: 'STAFF',
   });
-  const staff1 = userRepository.createStaff(staff1User.id);
+  const staff1 = await userRepository.createStaff(staff1User.id);
 
   // Create Staff 2
-  const staff2User = userRepository.save({
+  const staff2User = await userRepository.save({
     email: 'staff2@queue.com', passwordHash: staffHash,
     firstName: 'Bob', lastName: 'Johnson', role: 'STAFF',
   });
-  const staff2 = userRepository.createStaff(staff2User.id);
+  const staff2 = await userRepository.createStaff(staff2User.id);
 
   // Create Services
-  const service1 = serviceService.createService({
+  const service1 = await serviceService.createService({
     name: 'Haircut',
     description: 'Professional haircut styling service',
     estimatedDurationMinutes: 30,
     staffId: staff1.id,
   });
 
-  const service2 = serviceService.createService({
+  const service2 = await serviceService.createService({
     name: 'Hair Styling',
     description: 'Advanced hair styling and treatment',
     estimatedDurationMinutes: 45,
     staffId: staff2.id,
   });
 
-  const service3 = serviceService.createService({
+  const service3 = await serviceService.createService({
     name: 'General Consultation',
     description: 'Medical consultation with a doctor',
     estimatedDurationMinutes: 20,
   });
 
   // Update staff with service assignment
-  const dbInstance = db.getDb();
-  dbInstance.prepare('UPDATE staff SET service_id = ? WHERE id = ?').run(service1.id, staff1.id);
-  dbInstance.prepare('UPDATE staff SET service_id = ? WHERE id = ?').run(service2.id, staff2.id);
+  const pool = db.getPool();
+  await pool.query('UPDATE staff SET service_id = $1 WHERE id = $2', [service1.id, staff1.id]);
+  await pool.query('UPDATE staff SET service_id = $1 WHERE id = $2', [service2.id, staff2.id]);
 
   // Create demo customers
-  const cust1User = userRepository.save({
+  const cust1User = await userRepository.save({
     email: 'john@example.com', passwordHash: customerHash,
     firstName: 'John', lastName: 'Doe', phoneNumber: '1234567890', role: 'CUSTOMER',
   });
-  userRepository.createCustomer(cust1User.id);
+  await userRepository.createCustomer(cust1User.id);
 
-  const cust2User = userRepository.save({
+  const cust2User = await userRepository.save({
     email: 'jane@example.com', passwordHash: customerHash,
     firstName: 'Jane', lastName: 'Wilson', phoneNumber: '0987654321', role: 'CUSTOMER',
   });
-  userRepository.createCustomer(cust2User.id);
+  await userRepository.createCustomer(cust2User.id);
 
   console.log('[Seed] Demo data seeded successfully!');
   console.log('[Seed] Accounts:');
@@ -211,13 +201,11 @@ async function seedData(): Promise<void> {
 // ─── Start Server ────────────────────────────────────────────────────────────
 if (process.env.VERCEL) {
   // On Vercel, we don't start the HTTP server manually because Vercel handles the mapping
-  // Note: WebSockets will NOT work on Vercel Serverless Functions
   seedData().catch(console.error);
 } else {
   seedData().then(() => {
     httpServer.listen(config.port, () => {
       console.log(`\n🚀 Queue Management Server running on http://localhost:${config.port}`);
-      console.log(`📡 WebSocket server active`);
       console.log(`🔗 API: http://localhost:${config.port}/api`);
     });
   });

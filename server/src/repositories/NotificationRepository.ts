@@ -1,75 +1,77 @@
 import { DatabaseConnection } from '../config/database';
 import { INotificationRepository } from '../interfaces/IRepository';
-import Database from 'better-sqlite3';
+import { Pool } from 'pg';
 
-/**
- * NotificationRepository — Repository Pattern (DIP)
- *
- * SRP: Only handles notification data persistence.
- */
 export class NotificationRepository implements INotificationRepository {
-  private db: Database.Database;
+  private pool: Pool;
 
   constructor() {
-    this.db = DatabaseConnection.getInstance().getDb();
+    this.pool = DatabaseConnection.getInstance().getPool();
   }
 
-  findById(id: number): any | null {
-    return this.db.prepare('SELECT * FROM notifications WHERE id = ?').get(id) || null;
+  async findById(id: number): Promise<any | null> {
+    const res = await this.pool.query('SELECT * FROM notifications WHERE id = $1', [id]);
+    return res.rows[0] || null;
   }
 
-  findAll(): any[] {
-    return this.db.prepare('SELECT * FROM notifications ORDER BY sent_at DESC').all();
+  async findAll(): Promise<any[]> {
+    const res = await this.pool.query('SELECT * FROM notifications ORDER BY sent_at DESC');
+    return res.rows;
   }
 
-  findByUserId(userId: number): any[] {
-    return this.db.prepare(
-      'SELECT * FROM notifications WHERE user_id = ? ORDER BY sent_at DESC LIMIT 50'
-    ).all(userId);
+  async findByUserId(userId: number): Promise<any[]> {
+    const res = await this.pool.query(
+      'SELECT * FROM notifications WHERE user_id = $1 ORDER BY sent_at DESC LIMIT 50',
+      [userId]
+    );
+    return res.rows;
   }
 
-  findUnreadByUserId(userId: number): any[] {
-    return this.db.prepare(
-      'SELECT * FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY sent_at DESC'
-    ).all(userId);
+  async findUnreadByUserId(userId: number): Promise<any[]> {
+    const res = await this.pool.query(
+      'SELECT * FROM notifications WHERE user_id = $1 AND is_read = 0 ORDER BY sent_at DESC',
+      [userId]
+    );
+    return res.rows;
   }
 
-  markAsRead(id: number): void {
-    this.db.prepare(
-      "UPDATE notifications SET is_read = 1, read_at = datetime('now') WHERE id = ?"
-    ).run(id);
+  async markAsRead(id: number): Promise<void> {
+    await this.pool.query(
+      "UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id = $1",
+      [id]
+    );
   }
 
-  save(notification: any): any {
-    const result = this.db.prepare(`
+  async save(notification: any): Promise<any> {
+    const res = await this.pool.query(`
       INSERT INTO notifications (token_id, user_id, notification_type, title, message)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(
+      VALUES ($1, $2, $3, $4, $5) RETURNING id
+    `, [
       notification.tokenId || notification.token_id || null,
       notification.userId || notification.user_id,
       notification.notificationType || notification.notification_type,
       notification.title,
       notification.message
-    );
-    return this.findById(result.lastInsertRowid as number);
+    ]);
+    return this.findById(res.rows[0].id);
   }
 
-  update(id: number, data: any): any | null {
+  async update(id: number, data: any): Promise<any | null> {
     if (data.isRead || data.is_read) {
-      this.markAsRead(id);
+      await this.markAsRead(id);
     }
     return this.findById(id);
   }
 
-  delete(id: number): boolean {
-    const result = this.db.prepare('DELETE FROM notifications WHERE id = ?').run(id);
-    return result.changes > 0;
+  async delete(id: number): Promise<boolean> {
+    const res = await this.pool.query('DELETE FROM notifications WHERE id = $1', [id]);
+    return (res.rowCount ?? 0) > 0;
   }
 
-  /** Mark all notifications as read for a user */
-  markAllAsRead(userId: number): void {
-    this.db.prepare(
-      "UPDATE notifications SET is_read = 1, read_at = datetime('now') WHERE user_id = ? AND is_read = 0"
-    ).run(userId);
+  async markAllAsRead(userId: number): Promise<void> {
+    await this.pool.query(
+      "UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND is_read = 0",
+      [userId]
+    );
   }
 }

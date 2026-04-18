@@ -1,84 +1,85 @@
 import { DatabaseConnection } from '../config/database';
 import { IServiceStatisticsRepository } from '../interfaces/IRepository';
-import Database from 'better-sqlite3';
+import { Pool } from 'pg';
 
-/**
- * ServiceStatisticsRepository — Repository Pattern (DIP)
- *
- * SRP: Only handles service statistics data persistence.
- */
 export class ServiceStatisticsRepository implements IServiceStatisticsRepository {
-  private db: Database.Database;
+  private pool: Pool;
 
   constructor() {
-    this.db = DatabaseConnection.getInstance().getDb();
+    this.pool = DatabaseConnection.getInstance().getPool();
   }
 
-  findById(id: number): any | null {
-    return this.db.prepare('SELECT * FROM service_statistics WHERE id = ?').get(id) || null;
+  async findById(id: number): Promise<any | null> {
+    const res = await this.pool.query('SELECT * FROM service_statistics WHERE id = $1', [id]);
+    return res.rows[0] || null;
   }
 
-  findAll(): any[] {
-    return this.db.prepare('SELECT * FROM service_statistics ORDER BY stat_date DESC').all();
+  async findAll(): Promise<any[]> {
+    const res = await this.pool.query('SELECT * FROM service_statistics ORDER BY stat_date DESC');
+    return res.rows;
   }
 
-  findByServiceId(serviceId: number): any[] {
-    return this.db.prepare(
-      'SELECT * FROM service_statistics WHERE service_id = ? ORDER BY stat_date DESC LIMIT 30'
-    ).all(serviceId);
+  async findByServiceId(serviceId: number): Promise<any[]> {
+    const res = await this.pool.query(
+      'SELECT * FROM service_statistics WHERE service_id = $1 ORDER BY stat_date DESC LIMIT 30',
+      [serviceId]
+    );
+    return res.rows;
   }
 
-  findByServiceIdAndDate(serviceId: number, date: string): any | null {
-    return this.db.prepare(
-      'SELECT * FROM service_statistics WHERE service_id = ? AND stat_date = ?'
-    ).get(serviceId, date) || null;
+  async findByServiceIdAndDate(serviceId: number, date: string): Promise<any | null> {
+    const res = await this.pool.query(
+      'SELECT * FROM service_statistics WHERE service_id = $1 AND stat_date = $2',
+      [serviceId, date]
+    );
+    return res.rows[0] || null;
   }
 
-  upsert(serviceId: number, date: string, data: any): void {
-    const existing = this.findByServiceIdAndDate(serviceId, date);
+  async upsert(serviceId: number, date: string, data: any): Promise<void> {
+    const existing = await this.findByServiceIdAndDate(serviceId, date);
     if (existing) {
-      this.db.prepare(`
+      await this.pool.query(`
         UPDATE service_statistics
-        SET total_tokens = ?, completed_tokens = ?, cancelled_tokens = ?,
-            average_wait_time_minutes = ?, average_service_time_minutes = ?
-        WHERE service_id = ? AND stat_date = ?
-      `).run(
+        SET total_tokens = $1, completed_tokens = $2, cancelled_tokens = $3,
+            average_wait_time_minutes = $4, average_service_time_minutes = $5
+        WHERE service_id = $6 AND stat_date = $7
+      `, [
         data.totalTokens ?? data.total_tokens ?? existing.total_tokens,
         data.completedTokens ?? data.completed_tokens ?? existing.completed_tokens,
         data.cancelledTokens ?? data.cancelled_tokens ?? existing.cancelled_tokens,
         data.averageWaitTimeMinutes ?? data.average_wait_time_minutes ?? existing.average_wait_time_minutes,
         data.averageServiceTimeMinutes ?? data.average_service_time_minutes ?? existing.average_service_time_minutes,
         serviceId, date
-      );
+      ]);
     } else {
-      this.db.prepare(`
+      await this.pool.query(`
         INSERT INTO service_statistics (service_id, stat_date, total_tokens, completed_tokens, cancelled_tokens, average_wait_time_minutes, average_service_time_minutes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `, [
         serviceId, date,
         data.totalTokens ?? data.total_tokens ?? 0,
         data.completedTokens ?? data.completed_tokens ?? 0,
         data.cancelledTokens ?? data.cancelled_tokens ?? 0,
         data.averageWaitTimeMinutes ?? data.average_wait_time_minutes ?? 0,
         data.averageServiceTimeMinutes ?? data.average_service_time_minutes ?? 0
-      );
+      ]);
     }
   }
 
-  save(entity: any): any {
-    this.upsert(entity.serviceId || entity.service_id, entity.statDate || entity.stat_date, entity);
+  async save(entity: any): Promise<any> {
+    await this.upsert(entity.serviceId || entity.service_id, entity.statDate || entity.stat_date, entity);
     return this.findByServiceIdAndDate(entity.serviceId || entity.service_id, entity.statDate || entity.stat_date);
   }
 
-  update(id: number, data: any): any | null {
-    const existing = this.findById(id);
+  async update(id: number, data: any): Promise<any | null> {
+    const existing = await this.findById(id);
     if (!existing) return null;
-    this.upsert(existing.service_id, existing.stat_date, data);
+    await this.upsert(existing.service_id, existing.stat_date, data);
     return this.findById(id);
   }
 
-  delete(id: number): boolean {
-    const result = this.db.prepare('DELETE FROM service_statistics WHERE id = ?').run(id);
-    return result.changes > 0;
+  async delete(id: number): Promise<boolean> {
+    const res = await this.pool.query('DELETE FROM service_statistics WHERE id = $1', [id]);
+    return (res.rowCount ?? 0) > 0;
   }
 }
