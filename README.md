@@ -1,5 +1,7 @@
 # QueueFlow — Queue Management System
 
+**🔗 Live Demo: [https://queue-management-system-6rxe.vercel.app/](https://queue-management-system-6rxe.vercel.app/)**
+
 A comprehensive Queue Management System designed for **Salons** and **Hospitals** to efficiently manage customer/patient queues, reduce waiting times, and improve service delivery through digital token-based queuing.
 
 ** Vercel Serverless & PostgreSQL Ready**: This application has been fully refactored for cloud deployment using a Serverless Node.js backend on Vercel and an asynchronous PostgreSQL database architecture.
