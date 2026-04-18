@@ -70,16 +70,16 @@ A comprehensive Queue Management System designed for Salons and Hospitals to eff
 ## Technology Stack (Proposed)
 
 ### Backend
-- **Language**: Java (Spring Boot) or Node.js (Express.js)
-- **Database**: PostgreSQL or MySQL
-- **Authentication**: JWT tokens
-- **Real-time Updates**: WebSockets (Socket.io) or Server-Sent Events
+- **Language**: Node.js (Express.js) / Vercel Serverless
+- **Database**: PostgreSQL (via `pg`)
+- **Authentication**: JWT tokens + bcryptjs
+- **Real-time Updates**: HTTP Short-Polling
 
 ### Frontend
-- **Framework**: React.js or Vue.js
-- **Styling**: Tailwind CSS or Material-UI
-- **State Management**: Redux or Context API
-- **Real-time**: WebSocket client
+- **Framework**: React.js (TypeScript) + Vite
+- **Styling**: Vanilla CSS (Custom Design System)
+- **State Management**: React Context API
+- **Real-time**: Native HTTP Short-Polling
 
 ## System Requirements
 - Support for multiple concurrent users
