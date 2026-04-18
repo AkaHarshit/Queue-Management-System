@@ -2,34 +2,34 @@
 
 A comprehensive Queue Management System designed for **Salons** and **Hospitals** to efficiently manage customer/patient queues, reduce waiting times, and improve service delivery through digital token-based queuing.
 
-**🚀 Vercel Serverless & PostgreSQL Ready**: This application has been fully refactored for cloud deployment using a Serverless Node.js backend on Vercel and an asynchronous PostgreSQL database architecture.
+** Vercel Serverless & PostgreSQL Ready**: This application has been fully refactored for cloud deployment using a Serverless Node.js backend on Vercel and an asynchronous PostgreSQL database architecture.
 
-## ✨ Features
+##  Features
 
-### 🎫 Token System
+###  Token System
 - Automatic token number generation per service
 - Real-time token status tracking (Waiting → In Progress → Completed)
 - Estimated waiting time calculation
 - Queue position updates
 
-### 👥 Role-Based Dashboards
+###  Role-Based Dashboards
 - **Customer Dashboard** — Join queues, view token status, cancel tokens, view history
 - **Staff Dashboard** — View assigned tokens, start/complete services, queue statistics
 - **Admin Dashboard** — System overview, manage services & users, monitor all queues, analytics
 
-### 🔔 Real-Time Notifications
+###  Real-Time Notifications
 - HTTP Short-Polling for live, serverless-compatible updates
 - In-app notification persistence with mark-as-read
 - Queue position change alerts
 - Service start/completion notifications
 
-### 📊 Analytics & Reporting
+###  Analytics & Reporting
 - Today's token statistics (total, waiting, in-progress, completed)
 - Average wait time and service time
 - Per-service queue monitoring
 - Active queue summary
 
-## 🏗️ Architecture
+##  Architecture
 
 ### Design Patterns
 | Pattern | Usage |
@@ -46,7 +46,7 @@ A comprehensive Queue Management System designed for **Salons** and **Hospitals*
 - **ISP** — Repository interfaces split into `IReadRepository` and `IWriteRepository`
 - **DIP** — Services depend on repository interfaces, not concrete implementations
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Backend
 - **Runtime**: Node.js + TypeScript (Vercel Serverless Functions)
@@ -61,7 +61,7 @@ A comprehensive Queue Management System designed for **Salons** and **Hospitals*
 - **Styling**: Vanilla CSS (custom design system)
 - **Real-time**: Native React `setInterval` Polling
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 ├── server/
@@ -88,7 +88,7 @@ A comprehensive Queue Management System designed for **Salons** and **Hospitals*
 │       └── types/       # TypeScript type definitions
 ```
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Node.js 18+
@@ -147,10 +147,8 @@ The application is pre-configured for Vercel. Simply connect your GitHub reposit
 | Customer | john@example.com | customer123 |
 | Customer | jane@example.com | customer123 |
 
-## 📡 API Endpoints
+##  API Endpoints
 
 *(API endpoints remain unchanged)*
 
-## 📄 License
 
-This project is for educational purposes as part of the SESD curriculum.
