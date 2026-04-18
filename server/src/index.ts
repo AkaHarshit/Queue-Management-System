@@ -209,10 +209,18 @@ async function seedData(): Promise<void> {
 }
 
 // ─── Start Server ────────────────────────────────────────────────────────────
-seedData().then(() => {
-  httpServer.listen(config.port, () => {
-    console.log(`\n🚀 Queue Management Server running on http://localhost:${config.port}`);
-    console.log(`📡 WebSocket server active`);
-    console.log(`🔗 API: http://localhost:${config.port}/api`);
+if (process.env.VERCEL) {
+  // On Vercel, we don't start the HTTP server manually because Vercel handles the mapping
+  // Note: WebSockets will NOT work on Vercel Serverless Functions
+  seedData().catch(console.error);
+} else {
+  seedData().then(() => {
+    httpServer.listen(config.port, () => {
+      console.log(`\n🚀 Queue Management Server running on http://localhost:${config.port}`);
+      console.log(`📡 WebSocket server active`);
+      console.log(`🔗 API: http://localhost:${config.port}/api`);
+    });
   });
-});
+}
+
+export default app;
